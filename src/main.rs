@@ -39,6 +39,20 @@ impl SensitivePixel {
     }
 }
 
+struct Entry {
+    id: String,
+    pixel: SensitivePixel,
+}
+
+impl Entry {
+    fn new(id: &str, pixel: SensitivePixel) -> Self {
+        Self {
+            id: String::from(id),
+            pixel,
+        }
+    }
+}
+
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         min_window_size: Some(egui::vec2(320.0, 500.0)),
@@ -59,18 +73,22 @@ fn main() -> Result<(), eframe::Error> {
     let saved1 = saved.clone();
     let saved2 = saved.clone();
 
+    let identifier = Arc::new(Mutex::new(String::from("foobar")));
+    let identifier1 = identifier.clone();
+
     inputbot::MouseButton::LeftButton.bind(move || {
         if selecting1.fetch_and(false, Ordering::SeqCst) {
             println!("selected");
             saved2.lock().unwrap()
-                .push(SensitivePixel::from_mouse_position().unwrap());
+                .push(Entry::new(
+                    &identifier.lock().unwrap().clone(),
+                    SensitivePixel::from_mouse_position().unwrap(),
+                ));
         }
     });
     thread::spawn(|| {
         inputbot::handle_input_events();
     });
-
-    let mut identifier: String = String::from("foobar");
 
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -96,7 +114,12 @@ fn main() -> Result<(), eframe::Error> {
                             if ui.button("delete").clicked() {
                                 keep = false;
                             }
-                            ui.monospace(format!("({:4}, {:4}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
+                            ui.monospace(format!(
+                                "({:4}, {:4}) #{:02x}{:02x}{:02x} {}",
+                                t.pixel.x, t.pixel.y,
+                                t.pixel.r, t.pixel.g, t.pixel.b,
+                                t.id,
+                            ));
                             keep
                         }).inner
                     });
@@ -105,12 +128,15 @@ fn main() -> Result<(), eframe::Error> {
                     } else {
                         ui.horizontal(|ui| {
                             let select_button = ui.button("select");
-                            ui.text_edit_singleline(&mut identifier)
+                            let mut guard = identifier1.lock().unwrap();
+                            let mut target = guard.clone();
+                            ui.text_edit_singleline(&mut target)
                                 .labelled_by(select_button.id);
                             if select_button.clicked() {
                                 println!("selecting");
                                 selecting.store(true, Ordering::SeqCst);
                             }
+                            *guard = target;
                         });
                     }
                 });
