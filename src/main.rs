@@ -62,6 +62,7 @@ impl SensitivePixel {
     }
 }
 
+#[derive(Clone)]
 struct Entry {
     id: String,
     pixel: SensitivePixel,
@@ -111,7 +112,7 @@ fn main() -> Result<(), eframe::Error> {
     thread::spawn(move || {
         loop {
             {
-                let inner = saved3.lock().unwrap();
+                let inner = saved3.lock().unwrap().clone();
                 *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
             }
             thread::sleep(Duration::from_secs(1));
