@@ -25,6 +25,7 @@ fn read_pixels(ps: Vec<(i32, i32)>) -> HashMap<(i32, i32), (u8, u8, u8)> {
     let sps: Vec<_> = ps.iter().map(|(x, y)| {
         let screen = screenshots::Screen::from_point(*x, *y).expect("failed to find screen");
         if !screens.contains_key(&screen.display_info.id) {
+            println!("capturing");
             let cap = screen.capture().expect("failed to capture screen");
             screens.insert(screen.display_info.id, cap);
         }
@@ -109,9 +110,9 @@ fn main() -> Result<(), eframe::Error> {
 
     thread::spawn(move || {
         loop {
-            println!("one");
-            // let inner = saved3.lock().unwrap();
-            // *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
+            println!("tick");
+            let inner = saved3.lock().unwrap();
+            *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
             thread::sleep(Duration::from_secs(1));
         }
     });
