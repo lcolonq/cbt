@@ -110,9 +110,10 @@ fn main() -> Result<(), eframe::Error> {
 
     thread::spawn(move || {
         loop {
-            println!("tick");
-            let inner = saved3.lock().unwrap();
-            *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
+            {
+                let inner = saved3.lock().unwrap();
+                *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
+            }
             thread::sleep(Duration::from_secs(1));
         }
     });
