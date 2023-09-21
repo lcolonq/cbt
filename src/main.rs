@@ -44,6 +44,9 @@ fn main() -> Result<(), eframe::Error> {
         min_window_size: Some(egui::vec2(320.0, 240.0)),
         initial_window_size: Some(egui::vec2(320.0, 240.0)),
         always_on_top: true,
+        icon_data: Some(eframe::IconData::try_from_png_bytes(
+            include_bytes!("icon.png")
+        ).unwrap()),
         ..Default::default()
     };
 
