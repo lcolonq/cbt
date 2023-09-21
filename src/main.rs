@@ -101,15 +101,20 @@ fn main() -> Result<(), eframe::Error> {
     let saved2 = saved.clone();
     let saved3 = saved.clone();
 
-    let identifier = Arc::new(Mutex::new(String::from("foobar")));
+    let identifier = Arc::new(Mutex::new(String::from("howdy")));
     let identifier1 = identifier.clone();
 
     let pixels = Arc::new(Mutex::new(HashMap::<(i32, i32), (u8, u8, u8)>::new()));
     let pixels1 = pixels.clone();
     let pixels2 = pixels.clone();
 
-    let port = serialport::available_ports().ok()
-        .and_then(|ps| ps.first().map(|p| p.clone()));
+    let mut port = serialport::available_ports().ok().and_then(
+        |ps| ps.first().map(|p| (
+            p.clone(),
+            serialport::new(p.port_name.clone(), 9600).open()
+                .expect("failed to open serial port"),
+        ))
+    );
 
     thread::spawn(move || {
         loop {
@@ -165,6 +170,10 @@ fn main() -> Result<(), eframe::Error> {
                                 let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == t.current;
                                 if !matching && t.cooldown <= 0 {
                                     println!("{}", t.id);
+                                    if let Some(p) = &mut port {
+                                        p.1.write(t.id.as_bytes())
+                                            .expect("failed to write to serial port");
+                                    }
                                     t.cooldown += 5;
                                 }
                                 if matching && t.cooldown > 0 { t.cooldown -= 1; }
@@ -212,8 +221,9 @@ select, and then click anywhere on screen.
 the current color of that pixel will be
 stored. whenever that pixel changes color,
 the string will be sent via serial.");
+            ui.separator();
             if let Some(p) = &port {
-                ui.monospace(format!("writing to serial port: {}", p.port_name));
+                ui.monospace(format!("writing to serial port: {}", p.0.port_name));
             } else {
                 ui.monospace(
                     egui::RichText::new("no serial port detected")
