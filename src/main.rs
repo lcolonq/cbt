@@ -53,21 +53,22 @@ fn main() -> Result<(), eframe::Error> {
     let selecting = Arc::new(AtomicBool::new(false));
     let selecting1 = selecting.clone();
 
-    let saved = Arc::new(Mutex::new(SensitivePixel::from_mouse_position().unwrap()));
+    let saved = Arc::new(Mutex::new(Vec::new()));
     let saved1 = saved.clone();
     let saved2 = saved.clone();
 
     inputbot::MouseButton::LeftButton.bind(move || {
         if selecting1.fetch_and(false, Ordering::SeqCst) {
             println!("selected");
-            *saved2.lock().unwrap() = SensitivePixel::from_mouse_position().unwrap();
+            saved2.lock().unwrap()
+                .push(SensitivePixel::from_mouse_position().unwrap());
         }
     });
     thread::spawn(|| {
         inputbot::handle_input_events();
     });
 
-    eframe::run_simple_native("Clonk's Basic Tool", options, move |ctx, _frame| {
+    eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.code("
   /----\\     /$$$$$$  /$$$$$$$  /$$$$$$$$ 
@@ -82,10 +83,16 @@ fn main() -> Result<(), eframe::Error> {
             let s = SensitivePixel::from_mouse_position().unwrap();
             ui.label(format!("current: ({}, {}) #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
             let inner = saved1.lock().unwrap().clone();
-            ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", inner.x, inner.y, inner.r, inner.g, inner.b));
-            if ui.button("select").clicked() {
-                println!("selecting");
-                selecting.store(true, Ordering::SeqCst);
+            for t in inner {
+                ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
+            }
+            if selecting.load(Ordering::Relaxed) {
+                ui.label("click anywhere...");
+            } else {
+                if ui.button("select").clicked() {
+                    println!("selecting");
+                    selecting.store(true, Ordering::SeqCst);
+                }
             }
         });
         ctx.request_repaint();
