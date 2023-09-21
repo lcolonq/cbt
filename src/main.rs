@@ -87,12 +87,19 @@ fn main() -> Result<(), eframe::Error> {
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                    let inner = saved1.lock().unwrap().clone();
-                    for t in inner {
-                        ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
-                    }
+                    let mut inner = saved1.lock().unwrap();
+                    inner.retain(|t| {
+                        ui.horizontal(|ui| {
+                            let mut delete = false;
+                            if ui.button("delete").clicked() {
+                                delete = true;
+                            }
+                            ui.monospace(format!("({:4}, {:4}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
+                            delete
+                        }).inner
+                    });
                     if selecting.load(Ordering::Relaxed) {
-                        ui.label("click anywhere...");
+                        ui.monospace("click anywhere...");
                     } else {
                         if ui.button("select").clicked() {
                             println!("selecting");
