@@ -108,8 +108,8 @@ fn main() -> Result<(), eframe::Error> {
     let pixels1 = pixels.clone();
     let pixels2 = pixels.clone();
 
-    let ports = serialport::available_ports();
-    println!("{:?}", ports);
+    let port = serialport::available_ports().ok()
+        .and_then(|ps| ps.first().map(|p| p.clone()));
 
     thread::spawn(move || {
         loop {
@@ -212,6 +212,14 @@ select, and then click anywhere on screen.
 the current color of that pixel will be
 stored. whenever that pixel changes color,
 the string will be sent via serial.");
+            if let Some(p) = &port {
+                ui.monospace(format!("writing to serial port: {}", p.port_name));
+            } else {
+                ui.monospace(
+                    egui::RichText::new("no serial port detected")
+                        .color(egui::Color32::RED)
+                );
+            }
         });
         ctx.request_repaint();
     })
