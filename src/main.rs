@@ -70,7 +70,7 @@ fn main() -> Result<(), eframe::Error> {
         inputbot::handle_input_events();
     });
 
-    let mut identifier = "foobar";
+    let mut identifier: String = String::from("foobar");
 
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
