@@ -70,6 +70,7 @@ fn main() -> Result<(), eframe::Error> {
                 inputbot::MouseButton::LeftButton.bind(move || {
                     println!("selected");
                     *saved2.lock().unwrap() = SensitivePixel::from_mouse_position().unwrap();
+                    inputbot::MouseButton::LeftButton.unbind();
                 });
                 thread::spawn(|| {
                     println!("listening");
