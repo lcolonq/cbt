@@ -72,7 +72,7 @@ fn main() -> Result<(), eframe::Error> {
 
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.code("
+            ui.monospace("
   /----\\     /$$$$$$  /$$$$$$$  /$$$$$$$$ 
  / x  - \\   /$$__  $$| $$__  $$|__  $$__/ 
  \\  ww  /  | $$  \\__/| $$  \\ $$   | $$    
@@ -86,18 +86,20 @@ fn main() -> Result<(), eframe::Error> {
             ui.label(format!("current: ({}, {}) #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
-            let inner = saved1.lock().unwrap().clone();
-                for t in inner {
-                    ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
-                }
-                if selecting.load(Ordering::Relaxed) {
-                    ui.label("click anywhere...");
-                } else {
-                    if ui.button("select").clicked() {
-                        println!("selecting");
-                        selecting.store(true, Ordering::SeqCst);
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    let inner = saved1.lock().unwrap().clone();
+                    for t in inner {
+                        ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
                     }
-                }
+                    if selecting.load(Ordering::Relaxed) {
+                        ui.label("click anywhere...");
+                    } else {
+                        if ui.button("select").clicked() {
+                            println!("selecting");
+                            selecting.store(true, Ordering::SeqCst);
+                        }
+                    }
+                });
             });
         });
         ctx.request_repaint();
