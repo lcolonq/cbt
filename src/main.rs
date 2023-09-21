@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{sync::{Arc, Mutex}, thread};
+use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread};
 
 use enigo::*;
 use eframe::egui;
@@ -47,11 +47,24 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
+    let selecting = Arc::new(AtomicBool::new(false));
+    let selecting1 = selecting.clone();
+
     let saved = Arc::new(Mutex::new(SensitivePixel::from_mouse_position().unwrap()));
     let saved1 = saved.clone();
+    let saved2 = saved.clone();
+
+    inputbot::MouseButton::LeftButton.bind(move || {
+        if selecting1.fetch_and(false, Ordering::SeqCst) {
+            println!("selected");
+            *saved2.lock().unwrap() = SensitivePixel::from_mouse_position().unwrap();
+        }
+    });
+    thread::spawn(|| {
+        inputbot::handle_input_events();
+    });
 
     eframe::run_simple_native("Clonk's Basic Tool", options, move |ctx, _frame| {
-        let saved2 = saved.clone();
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.code("
   /----\\     /$$$$$$  /$$$$$$$  /$$$$$$$$ 
@@ -69,16 +82,7 @@ fn main() -> Result<(), eframe::Error> {
             ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", inner.x, inner.y, inner.r, inner.g, inner.b));
             if ui.button("select").clicked() {
                 println!("selecting");
-                inputbot::MouseButton::LeftButton.bind(move || {
-                    println!("selected");
-                    *saved2.lock().unwrap() = SensitivePixel::from_mouse_position().unwrap();
-                    inputbot::MouseButton::LeftButton.unbind();
-                });
-                thread::spawn(|| {
-                    println!("listening");
-                    inputbot::handle_input_events();
-                    println!("done");
-                });
+                selecting.store(true, Ordering::SeqCst);
             }
         });
         ctx.request_repaint();
