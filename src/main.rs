@@ -41,7 +41,9 @@ impl SensitivePixel {
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
+        min_window_size: Some(egui::vec2(320.0, 240.0)),
         initial_window_size: Some(egui::vec2(320.0, 240.0)),
+        always_on_top: true,
         ..Default::default()
     };
 
