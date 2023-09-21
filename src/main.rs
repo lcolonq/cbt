@@ -90,12 +90,12 @@ fn main() -> Result<(), eframe::Error> {
                     let mut inner = saved1.lock().unwrap();
                     inner.retain(|t| {
                         ui.horizontal(|ui| {
-                            let mut delete = false;
+                            let mut keep = true;
                             if ui.button("delete").clicked() {
-                                delete = true;
+                                keep = false;
                             }
                             ui.monospace(format!("({:4}, {:4}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
-                            delete
+                            keep
                         }).inner
                     });
                     if selecting.load(Ordering::Relaxed) {
