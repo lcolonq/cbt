@@ -171,8 +171,7 @@ fn main() -> Result<(), eframe::Error> {
                                 if !matching && t.cooldown <= 0 {
                                     println!("{}", t.id);
                                     if let Some(p) = &mut port {
-                                        p.1.write(t.id.as_bytes())
-                                            .expect("failed to write to serial port");
+                                        let _ = p.1.write(t.id.as_bytes());
                                     }
                                     t.cooldown += 5;
                                 }
