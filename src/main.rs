@@ -5,6 +5,21 @@ use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread};
 use enigo::*;
 use eframe::egui;
 
+fn read_pixel(x: i32, y: i32) -> Option<(u8, u8, u8)> {
+    let screen = screenshots::Screen::from_point(x, y).ok()?;
+    let cap = screen.capture_area(
+        x - screen.display_info.x,
+        y - screen.display_info.y,
+        1,
+        1,
+    ).ok()?;
+    let mut iter = cap.into_iter();
+    let r = *iter.next()?;
+    let g = *iter.next()?;
+    let b = *iter.next()?;
+    Some((r, g, b))
+}
+
 #[derive(Clone)]
 struct SensitivePixel {
     x: i32,
@@ -18,17 +33,7 @@ impl SensitivePixel {
     fn from_mouse_position() -> Option<Self> {
         let enigo = Enigo::new();
         let (x, y) = enigo.mouse_location();
-        let screen = screenshots::Screen::from_point(x, y).ok()?;
-        let cap = screen.capture_area(
-            x - screen.display_info.x,
-            y - screen.display_info.y,
-            1,
-            1,
-        ).ok()?;
-        let mut iter = cap.into_iter();
-        let r = *iter.next()?;
-        let g = *iter.next()?;
-        let b = *iter.next()?;
+        let (r, g, b) = read_pixel(x, y)?;
         Some(Self {
             x,
             y,
@@ -117,12 +122,19 @@ fn main() -> Result<(), eframe::Error> {
                                 if ui.button("delete").clicked() {
                                     keep = false;
                                 }
-                                ui.monospace(format!(
-                                    "{:4} {:4} #{:02x}{:02x}{:02x} {}",
-                                    t.pixel.x, t.pixel.y,
-                                    t.pixel.r, t.pixel.g, t.pixel.b,
-                                    t.id,
-                                ));
+
+                                let (r, g, b) = read_pixel(t.pixel.x, t.pixel.y)
+                                    .expect(&format!("failed to read pixel at: {} {}", t.pixel.x, t.pixel.y));
+                                ui.monospace(
+                                    egui::RichText::new(
+                                        format!(
+                                            "{:4} {:4} #{:02x}{:02x}{:02x} {}",
+                                            t.pixel.x, t.pixel.y,
+                                            t.pixel.r, t.pixel.g, t.pixel.b,
+                                            t.id,
+                                        ),
+                                    ).color(egui::Color32::from_rgb(r, g, b))
+                                );
                                 keep
                             }).inner
                         });
