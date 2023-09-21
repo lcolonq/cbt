@@ -79,11 +79,13 @@ fn main() -> Result<(), eframe::Error> {
     inputbot::MouseButton::LeftButton.bind(move || {
         if selecting1.fetch_and(false, Ordering::SeqCst) {
             println!("selected");
+            let mut guard = identifier.lock().unwrap();
             saved2.lock().unwrap()
                 .push(Entry::new(
-                    &identifier.lock().unwrap().clone(),
+                    &guard.clone(),
                     SensitivePixel::from_mouse_position().unwrap(),
                 ));
+            *guard = String::new();
         }
     });
     thread::spawn(|| {
@@ -107,22 +109,24 @@ fn main() -> Result<(), eframe::Error> {
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                    let mut inner = saved1.lock().unwrap();
-                    inner.retain(|t| {
-                        ui.horizontal(|ui| {
-                            let mut keep = true;
-                            if ui.button("delete").clicked() {
-                                keep = false;
-                            }
-                            ui.monospace(format!(
-                                "{:4} {:4} #{:02x}{:02x}{:02x} {}",
-                                t.pixel.x, t.pixel.y,
-                                t.pixel.r, t.pixel.g, t.pixel.b,
-                                t.id,
-                            ));
-                            keep
-                        }).inner
-                    });
+                    {
+                        let mut inner = saved1.lock().unwrap();
+                        inner.retain(|t| {
+                            ui.horizontal(|ui| {
+                                let mut keep = true;
+                                if ui.button("delete").clicked() {
+                                    keep = false;
+                                }
+                                ui.monospace(format!(
+                                    "{:4} {:4} #{:02x}{:02x}{:02x} {}",
+                                    t.pixel.x, t.pixel.y,
+                                    t.pixel.r, t.pixel.g, t.pixel.b,
+                                    t.id,
+                                ));
+                                keep
+                            }).inner
+                        });
+                    }
                     if selecting.load(Ordering::Relaxed) {
                         ui.monospace(egui::RichText::new("click anywhere...").color(egui::Color32::RED));
                     } else {
@@ -133,15 +137,13 @@ fn main() -> Result<(), eframe::Error> {
                             ui.text_edit_singleline(&mut target);
                             if select_button.clicked() && !target.is_empty() {
                                 println!("selecting");
-                                *guard = String::new();
                                 selecting.store(true, Ordering::SeqCst);
-                            } else {
-                                *guard = target;
                             }
+                            *guard = target;
                         });
                     }
                 });
-            });
+            })&identifier.lock().unwrap();
             ui.separator();
             ui.monospace("how to use: enter a string above, click
 select, and then click anywhere on screen.
