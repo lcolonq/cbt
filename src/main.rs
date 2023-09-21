@@ -153,14 +153,15 @@ fn main() -> Result<(), eframe::Error> {
                     {
                         let mut inner = saved1.lock().unwrap();
                         inner.retain_mut(|t| {
-                            let (r, g, b): (u8, u8, u8) = *pixels1.lock().unwrap().get(&(t.pixel.x, t.pixel.y)).unwrap();
-                            t.current = (r, g, b);
-                            let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
-                            if !matching && t.cooldown <= 0 {
-                                println!("{}", t.id);
-                                t.cooldown += 5;
+                            if let Some((r, g, b)) = pixels1.lock().unwrap().get(&(t.pixel.x, t.pixel.y)) {
+                                t.current = (*r, *g, *b);
+                                let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == t.current;
+                                if !matching && t.cooldown <= 0 {
+                                    println!("{}", t.id);
+                                    t.cooldown += 5;
+                                }
+                                if matching && t.cooldown > 0 { t.cooldown -= 1; }
                             }
-                            if matching && t.cooldown > 0 { t.cooldown -= 1; }
                             ui.horizontal(|ui| {
                                 let mut keep = true;
                                 if ui.button("delete").clicked() {
