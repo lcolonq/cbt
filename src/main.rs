@@ -108,6 +108,9 @@ fn main() -> Result<(), eframe::Error> {
     let pixels1 = pixels.clone();
     let pixels2 = pixels.clone();
 
+    let ports = serialport::available_ports();
+    println!("{:?}", ports);
+
     thread::spawn(move || {
         loop {
             {
