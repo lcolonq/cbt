@@ -70,7 +70,7 @@ fn main() -> Result<(), eframe::Error> {
         inputbot::handle_input_events();
     });
 
-    let mut identifier = "";
+    let mut identifier = "foobar";
 
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -104,8 +104,10 @@ fn main() -> Result<(), eframe::Error> {
                         ui.monospace("click anywhere...");
                     } else {
                         ui.horizontal(|ui| {
-                            ui.text_edit_singleline(&mut identifier);
-                            if ui.button("select").clicked() {
+                            let select_button = ui.button("select");
+                            ui.text_edit_singleline(&mut identifier)
+                                .labelled_by(select_button.id);
+                            if select_button.clicked() {
                                 println!("selecting");
                                 selecting.store(true, Ordering::SeqCst);
                             }
