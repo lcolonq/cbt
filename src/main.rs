@@ -109,11 +109,11 @@ fn main() -> Result<(), eframe::Error> {
     let pixels2 = pixels.clone();
 
     let mut port = serialport::available_ports().ok().and_then(
-        |ps| ps.first().map(|p| (
-            p.clone(),
-            serialport::new(p.port_name.clone(), 9600).open()
-                .expect("failed to open serial port"),
-        ))
+        |ps| ps.first().and_then(|p| {
+            serialport::new(p.port_name.clone(), 9600).open().ok().map(|op| {
+                (p.clone(), op)
+            })
+        })
     );
 
     thread::spawn(move || {
