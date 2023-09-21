@@ -44,6 +44,8 @@ fn main() -> Result<(), eframe::Error> {
         min_window_size: Some(egui::vec2(320.0, 240.0)),
         initial_window_size: Some(egui::vec2(320.0, 240.0)),
         always_on_top: true,
+        follow_system_theme: false,
+        default_theme: eframe::Theme::Dark,
         icon_data: Some(eframe::IconData::try_from_png_bytes(
             include_bytes!("icon.png")
         ).unwrap()),
@@ -82,18 +84,21 @@ fn main() -> Result<(), eframe::Error> {
 ");
             let s = SensitivePixel::from_mouse_position().unwrap();
             ui.label(format!("current: ({}, {}) #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
+            ui.separator();
+            egui::ScrollArea::vertical().show(ui, |ui| {
             let inner = saved1.lock().unwrap().clone();
-            for t in inner {
-                ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
-            }
-            if selecting.load(Ordering::Relaxed) {
-                ui.label("click anywhere...");
-            } else {
-                if ui.button("select").clicked() {
-                    println!("selecting");
-                    selecting.store(true, Ordering::SeqCst);
+                for t in inner {
+                    ui.label(format!("saved: ({}, {}) #{:02x}{:02x}{:02x}", t.x, t.y, t.r, t.g, t.b));
                 }
-            }
+                if selecting.load(Ordering::Relaxed) {
+                    ui.label("click anywhere...");
+                } else {
+                    if ui.button("select").clicked() {
+                        println!("selecting");
+                        selecting.store(true, Ordering::SeqCst);
+                    }
+                }
+            });
         });
         ctx.request_repaint();
     })
