@@ -129,8 +129,9 @@ fn main() -> Result<(), eframe::Error> {
                         ui.horizontal(|ui| {
                             let mut guard = identifier1.lock().unwrap();
                             let mut target = guard.clone();
+                            let select_button = ui.button("select");
                             ui.text_edit_singleline(&mut target);
-                            if !target.is_empty() && ui.button("select").clicked() {
+                            if select_button.clicked() && !target.is_empty() {
                                 println!("selecting");
                                 *guard = String::new();
                                 selecting.store(true, Ordering::SeqCst);
