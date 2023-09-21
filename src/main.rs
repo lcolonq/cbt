@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread, collections::HashMap};
+use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread, collections::HashMap, time::Duration};
 
 use enigo::*;
 use eframe::egui;
@@ -20,7 +20,7 @@ fn read_pixel(x: i32, y: i32) -> Option<(u8, u8, u8)> {
     Some((r, g, b))
 }
 
-fn read_pixels(ps: Vec<(i32, i32)>) -> Vec<(u8, u8, u8)> {
+fn read_pixels(ps: Vec<(i32, i32)>) -> HashMap<(i32, i32), (u8, u8, u8)> {
     let mut screens = HashMap::new();
     let sps: Vec<_> = ps.iter().map(|(x, y)| {
         let screen = screenshots::Screen::from_point(*x, *y).expect("failed to find screen");
@@ -30,11 +30,11 @@ fn read_pixels(ps: Vec<(i32, i32)>) -> Vec<(u8, u8, u8)> {
         }
         (screen.display_info.id, x - screen.display_info.x, y - screen.display_info.y)
     }).collect();
-    sps.iter().map(|(did, x, y)| {
+    HashMap::from_iter(sps.iter().map(|(did, x, y)| {
         let cap = screens.get(did).expect("failed to find capture");
         let pixel = cap.get_pixel(*x as _, *y as _);
-        (pixel[0], pixel[1], pixel[2])
-    }).collect()
+        ((*x, *y), (pixel[0], pixel[1], pixel[2]))
+    }))
 }
 
 #[derive(Clone)]
@@ -95,12 +95,23 @@ fn main() -> Result<(), eframe::Error> {
     let selecting = Arc::new(AtomicBool::new(false));
     let selecting1 = selecting.clone();
 
-    let saved = Arc::new(Mutex::new(Vec::new()));
+    let saved = Arc::new(Mutex::new(Vec::<Entry>::new()));
     let saved1 = saved.clone();
     let saved2 = saved.clone();
+    let saved3 = saved.clone();
 
     let identifier = Arc::new(Mutex::new(String::from("foobar")));
     let identifier1 = identifier.clone();
+
+    let pixels = Arc::new(Mutex::new(HashMap::new()));
+    let pixels1 = pixels.clone();
+    let pixels2 = pixels.clone();
+
+    thread::spawn(move || {
+        let inner = saved3.lock().unwrap();
+        *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
+        thread::sleep(Duration::from_secs(1));
+    });
 
     inputbot::MouseButton::LeftButton.bind(move || {
         if selecting1.fetch_and(false, Ordering::SeqCst) {
@@ -144,8 +155,8 @@ fn main() -> Result<(), eframe::Error> {
                     {
                         let mut inner = saved1.lock().unwrap();
                         if frame % 10 == 0 {
-                            let pixels = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
-                            inner.iter_mut().zip(pixels).for_each(|(t, (r, g, b))| {
+                            inner.iter_mut().for_each(|t| {
+                                let (r, g, b): (u8, u8, u8) = *pixels1.lock().unwrap().get(&(t.pixel.x, t.pixel.y)).unwrap();
                                 t.current = (r, g, b);
                                 let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
                                 if !matching && t.cooldown <= 0 {
