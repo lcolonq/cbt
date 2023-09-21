@@ -101,7 +101,7 @@ fn main() -> Result<(), eframe::Error> {
                         }).inner
                     });
                     if selecting.load(Ordering::Relaxed) {
-                        ui.monospace("click anywhere...");
+                        ui.monospace(egui::RichText::new("click anywhere...").color(egui::Color32::RED));
                     } else {
                         ui.horizontal(|ui| {
                             let select_button = ui.button("select");
@@ -115,6 +115,12 @@ fn main() -> Result<(), eframe::Error> {
                     }
                 });
             });
+            ui.separator();
+            ui.monospace("how to use: enter a string above, click select,
+and then click anywhere on screen. the current color
+of that pixel will be stored. whenever that pixel
+changes color, the string will be sent over the
+serial port.");
         });
         ctx.request_repaint();
     })
