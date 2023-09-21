@@ -103,7 +103,7 @@ fn main() -> Result<(), eframe::Error> {
     :3      \\______/ |_______/    |__/    
 ");
             let s = SensitivePixel::from_mouse_position().unwrap();
-            ui.monospace(format!("current: ({:4}, {:4}) #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
+            ui.monospace(format!("current: {:4} {:4} #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
@@ -115,7 +115,7 @@ fn main() -> Result<(), eframe::Error> {
                                 keep = false;
                             }
                             ui.monospace(format!(
-                                "({:4}, {:4}) #{:02x}{:02x}{:02x} {}",
+                                "{:4} {:4} #{:02x}{:02x}{:02x} {}",
                                 t.pixel.x, t.pixel.y,
                                 t.pixel.r, t.pixel.g, t.pixel.b,
                                 t.id,
@@ -127,16 +127,16 @@ fn main() -> Result<(), eframe::Error> {
                         ui.monospace(egui::RichText::new("click anywhere...").color(egui::Color32::RED));
                     } else {
                         ui.horizontal(|ui| {
-                            let select_button = ui.button("select");
                             let mut guard = identifier1.lock().unwrap();
                             let mut target = guard.clone();
-                            ui.text_edit_singleline(&mut target)
-                                .labelled_by(select_button.id);
-                            if select_button.clicked() {
+                            ui.text_edit_singleline(&mut target);
+                            if !target.is_empty() && ui.button("select").clicked() {
                                 println!("selecting");
+                                *guard = String::new();
                                 selecting.store(true, Ordering::SeqCst);
+                            } else {
+                                *guard = target;
                             }
-                            *guard = target;
                         });
                     }
                 });
