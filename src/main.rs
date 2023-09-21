@@ -48,6 +48,7 @@ struct Entry {
     id: String,
     pixel: SensitivePixel,
     cooldown: i32,
+    current: (u8, u8, u8),
 }
 
 impl Entry {
@@ -56,6 +57,7 @@ impl Entry {
             id: String::from(id),
             pixel,
             cooldown: 0,
+            current: (0, 0, 0),
         }
     }
 }
@@ -99,7 +101,9 @@ fn main() -> Result<(), eframe::Error> {
         inputbot::handle_input_events();
     });
 
+    let mut frame = 0;
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
+        frame += 1;
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.monospace("
   /----\\     /$$$$$$  /$$$$$$$  /$$$$$$$$ 
@@ -129,14 +133,18 @@ fn main() -> Result<(), eframe::Error> {
                                     keep = false;
                                 }
 
-                                let (r, g, b) = read_pixel(t.pixel.x, t.pixel.y)
-                                    .expect(&format!("failed to read pixel at: {} {}", t.pixel.x, t.pixel.y));
-                                let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
-                                if !matching && t.cooldown <= 0 {
-                                    println!("{}", t.id);
-                                    t.cooldown += 60;
+                                if frame % 10 == 0 {
+                                    let (r, g, b) = read_pixel(t.pixel.x, t.pixel.y)
+                                        .expect(&format!("failed to read pixel at: {} {}", t.pixel.x, t.pixel.y));
+                                    t.current = (r, g, b);
+                                    let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
+                                    if !matching && t.cooldown <= 0 {
+                                        println!("{}", t.id);
+                                        t.cooldown += 5;
+                                    }
+                                    if matching && t.cooldown > 0 { t.cooldown -= 1; }
                                 }
-                                if matching && t.cooldown > 0 { t.cooldown -= 1; }
+                                let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == t.current;
                                 ui.monospace(
                                     egui::RichText::new(
                                         format!(
@@ -146,7 +154,7 @@ fn main() -> Result<(), eframe::Error> {
                                             t.pixel.r, t.pixel.g, t.pixel.b,
                                             t.id,
                                         ),
-                                    ).color(egui::Color32::from_rgb(r, g, b))
+                                    ).color(egui::Color32::from_rgb(t.current.0, t.current.1, t.current.2))
                                 );
                                 keep
                             }).inner
