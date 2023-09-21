@@ -70,6 +70,8 @@ fn main() -> Result<(), eframe::Error> {
         inputbot::handle_input_events();
     });
 
+    let mut identifier = "";
+
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.monospace("
@@ -83,7 +85,7 @@ fn main() -> Result<(), eframe::Error> {
     :3      \\______/ |_______/    |__/    
 ");
             let s = SensitivePixel::from_mouse_position().unwrap();
-            ui.label(format!("current: ({}, {}) #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
+            ui.monospace(format!("current: ({:4}, {:4}) #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
@@ -101,10 +103,13 @@ fn main() -> Result<(), eframe::Error> {
                     if selecting.load(Ordering::Relaxed) {
                         ui.monospace("click anywhere...");
                     } else {
-                        if ui.button("select").clicked() {
-                            println!("selecting");
-                            selecting.store(true, Ordering::SeqCst);
-                        }
+                        ui.horizontal(|ui| {
+                            ui.text_edit_singleline(&mut identifier);
+                            if ui.button("select").clicked() {
+                                println!("selecting");
+                                selecting.store(true, Ordering::SeqCst);
+                            }
+                        });
                     }
                 });
             });
