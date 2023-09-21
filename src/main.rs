@@ -143,7 +143,7 @@ fn main() -> Result<(), eframe::Error> {
                         });
                     }
                 });
-            })&identifier.lock().unwrap();
+            });
             ui.separator();
             ui.monospace("how to use: enter a string above, click
 select, and then click anywhere on screen.
