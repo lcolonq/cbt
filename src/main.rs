@@ -129,9 +129,7 @@ fn main() -> Result<(), eframe::Error> {
         inputbot::handle_input_events();
     });
 
-    let mut frame = 0;
     eframe::run_simple_native("clonk's basic tool", options, move |ctx, _frame| {
-        frame += 1;
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.monospace("
   /----\\     /$$$$$$  /$$$$$$$  /$$$$$$$$ 
@@ -154,19 +152,15 @@ fn main() -> Result<(), eframe::Error> {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
                     {
                         let mut inner = saved1.lock().unwrap();
-                        if frame % 10 == 0 {
-                            inner.iter_mut().for_each(|t| {
-                                let (r, g, b): (u8, u8, u8) = *pixels1.lock().unwrap().get(&(t.pixel.x, t.pixel.y)).unwrap();
-                                t.current = (r, g, b);
-                                let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
-                                if !matching && t.cooldown <= 0 {
-                                    println!("{}", t.id);
-                                    t.cooldown += 5;
-                                }
-                                if matching && t.cooldown > 0 { t.cooldown -= 1; }
-                            });
-                        }
                         inner.retain_mut(|t| {
+                            let (r, g, b): (u8, u8, u8) = *pixels1.lock().unwrap().get(&(t.pixel.x, t.pixel.y)).unwrap();
+                            t.current = (r, g, b);
+                            let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
+                            if !matching && t.cooldown <= 0 {
+                                println!("{}", t.id);
+                                t.cooldown += 5;
+                            }
+                            if matching && t.cooldown > 0 { t.cooldown -= 1; }
                             ui.horizontal(|ui| {
                                 let mut keep = true;
                                 if ui.button("delete").clicked() {
