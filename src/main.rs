@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread};
+use std::{sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, thread, collections::HashMap};
 
 use enigo::*;
 use eframe::egui;
@@ -18,6 +18,23 @@ fn read_pixel(x: i32, y: i32) -> Option<(u8, u8, u8)> {
     let g = *iter.next()?;
     let b = *iter.next()?;
     Some((r, g, b))
+}
+
+fn read_pixels(ps: Vec<(i32, i32)>) -> Vec<(u8, u8, u8)> {
+    let mut screens = HashMap::new();
+    let sps: Vec<_> = ps.iter().map(|(x, y)| {
+        let screen = screenshots::Screen::from_point(*x, *y).expect("failed to find screen");
+        if !screens.contains_key(&screen.display_info.id) {
+            let cap = screen.capture().expect("failed to capture screen");
+            screens.insert(screen.display_info.id, cap);
+        }
+        (screen.display_info.id, x - screen.display_info.x, y - screen.display_info.y)
+    }).collect();
+    sps.iter().map(|(did, x, y)| {
+        let cap = screens.get(did).expect("failed to find capture");
+        let pixel = cap.get_pixel(*x as _, *y as _);
+        (pixel[0], pixel[1], pixel[2])
+    }).collect()
 }
 
 #[derive(Clone)]
@@ -126,23 +143,23 @@ fn main() -> Result<(), eframe::Error> {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
                     {
                         let mut inner = saved1.lock().unwrap();
+                        if frame % 10 == 0 {
+                            let pixels = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
+                            inner.iter_mut().zip(pixels).for_each(|(t, (r, g, b))| {
+                                t.current = (r, g, b);
+                                let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
+                                if !matching && t.cooldown <= 0 {
+                                    println!("{}", t.id);
+                                    t.cooldown += 5;
+                                }
+                                if matching && t.cooldown > 0 { t.cooldown -= 1; }
+                            });
+                        }
                         inner.retain_mut(|t| {
                             ui.horizontal(|ui| {
                                 let mut keep = true;
                                 if ui.button("delete").clicked() {
                                     keep = false;
-                                }
-
-                                if frame % 10 == 0 {
-                                    let (r, g, b) = read_pixel(t.pixel.x, t.pixel.y)
-                                        .expect(&format!("failed to read pixel at: {} {}", t.pixel.x, t.pixel.y));
-                                    t.current = (r, g, b);
-                                    let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
-                                    if !matching && t.cooldown <= 0 {
-                                        println!("{}", t.id);
-                                        t.cooldown += 5;
-                                    }
-                                    if matching && t.cooldown > 0 { t.cooldown -= 1; }
                                 }
                                 let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == t.current;
                                 ui.monospace(
