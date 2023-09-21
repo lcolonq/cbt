@@ -135,9 +135,8 @@ fn main() -> Result<(), eframe::Error> {
                                 if !matching && t.cooldown <= 0 {
                                     println!("{}", t.id);
                                     t.cooldown += 60;
-                                } else if t.cooldown > 0 {
-                                    t.cooldown -= 1;
                                 }
+                                if matching && t.cooldown > 0 { t.cooldown -= 1; }
                                 ui.monospace(
                                     egui::RichText::new(
                                         format!(
