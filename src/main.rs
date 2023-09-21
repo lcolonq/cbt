@@ -116,11 +116,11 @@ fn main() -> Result<(), eframe::Error> {
                 });
             });
             ui.separator();
-            ui.monospace("how to use: enter a string above, click select,
-and then click anywhere on screen. the current color
-of that pixel will be stored. whenever that pixel
-changes color, the string will be sent over the
-serial port.");
+            ui.monospace("how to use: enter a string above, click
+select, and then click anywhere on screen.
+the current color of that pixel will be
+stored. whenever that pixel changes color,
+the string will be sent via serial.");
         });
         ctx.request_repaint();
     })
