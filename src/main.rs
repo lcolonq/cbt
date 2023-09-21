@@ -47,6 +47,7 @@ impl SensitivePixel {
 struct Entry {
     id: String,
     pixel: SensitivePixel,
+    cooldown: i32,
 }
 
 impl Entry {
@@ -54,6 +55,7 @@ impl Entry {
         Self {
             id: String::from(id),
             pixel,
+            cooldown: 0,
         }
     }
 }
@@ -110,13 +112,17 @@ fn main() -> Result<(), eframe::Error> {
     :3      \\______/ |_______/    |__/    
 ");
             let s = SensitivePixel::from_mouse_position().unwrap();
-            ui.monospace(format!("current: {:4} {:4} #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b));
+            ui.monospace(
+                egui::RichText::new(
+                    format!("current: {:4} {:4} #{:02x}{:02x}{:02x}", s.x, s.y, s.r, s.g, s.b)
+                ).color(egui::Color32::from_rgb(s.r, s.g, s.b))
+            );
             ui.separator();
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
                     {
                         let mut inner = saved1.lock().unwrap();
-                        inner.retain(|t| {
+                        inner.retain_mut(|t| {
                             ui.horizontal(|ui| {
                                 let mut keep = true;
                                 if ui.button("delete").clicked() {
@@ -125,10 +131,16 @@ fn main() -> Result<(), eframe::Error> {
 
                                 let (r, g, b) = read_pixel(t.pixel.x, t.pixel.y)
                                     .expect(&format!("failed to read pixel at: {} {}", t.pixel.x, t.pixel.y));
+                                let matching = (t.pixel.r, t.pixel.g, t.pixel.b) == (r, g, b);
+                                if !matching && t.cooldown <= 0 {
+                                    println!("{}", t.id);
+                                    t.cooldown += 60;
+                                }
                                 ui.monospace(
                                     egui::RichText::new(
                                         format!(
-                                            "{:4} {:4} #{:02x}{:02x}{:02x} {}",
+                                            "{} {:4} {:4} #{:02x}{:02x}{:02x} {}",
+                                            if matching { "." } else { "X" },
                                             t.pixel.x, t.pixel.y,
                                             t.pixel.r, t.pixel.g, t.pixel.b,
                                             t.id,
