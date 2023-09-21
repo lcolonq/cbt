@@ -107,13 +107,14 @@ fn main() -> Result<(), eframe::Error> {
     let pixels1 = pixels.clone();
     let pixels2 = pixels.clone();
 
-    // thread::spawn(move || {
-    //     loop {
-    //         let inner = saved3.lock().unwrap();
-    //         *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
-    //         thread::sleep(Duration::from_secs(1));
-    //     }
-    // });
+    thread::spawn(move || {
+        loop {
+            println!("one");
+            // let inner = saved3.lock().unwrap();
+            // *pixels2.lock().unwrap() = read_pixels(inner.iter().map(|e| (e.pixel.x, e.pixel.y)).collect());
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
 
     inputbot::MouseButton::LeftButton.bind(move || {
         if selecting1.fetch_and(false, Ordering::SeqCst) {
